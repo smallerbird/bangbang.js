@@ -1,0 +1,25 @@
+{
+  "name": "bangbang",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "bangbang": "./index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/smallerbird/bangbang.js.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/smallerbird/bangbang.js/issues"
+  },
+  "homepage": "https://github.com/smallerbird/bangbang.js#readme",
+  "dependencies": {
+    "fs-extra": "^6.0.1"
+  }
+}
