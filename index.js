@@ -5,6 +5,7 @@ const fse = require('fs-extra')
 const Path=require('path')
 const process=require('process')
 let {exists,writeFile}=require('./lib/FSTools')
+let {formatArguments}=require('./lib/CommandLine.js')
 
 const ejs=require('ejs');
 const readEjsFile = function (file,data={}){
@@ -35,17 +36,7 @@ let helpMsg=`
 `;
 const currentPath=process.cwd();
 console.log('当前运行目录：'+currentPath)
-var c_arguments = process.argv.splice(2);
 //console.log(c_arguments)
-//格式化出参数
-function formatArguments(key) {
-    for (let i=0;i<c_arguments.length;i++){
-        let item=c_arguments[i];
-        //console.log(item,'--'+key)
-        if (item =='--'+key) return c_arguments[i+1];
-    }
-    return false;
-}
 let init=formatArguments('init')||null;
 let file=formatArguments('file')||null;
 
