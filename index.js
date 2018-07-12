@@ -32,20 +32,23 @@ let helpMsg=`
         ]
     }
 功能二：初始化一些文件模板
-   bangbang --init 类型 --outfile 输出的文件名  [--file 模板配置文件]
+   bangbang --t 文件夹模板 --out 输出的文件名
 `;
 const currentPath=process.cwd();
 console.log('当前运行目录：'+currentPath)
 //console.log(c_arguments)
-let init=formatArguments('init')||null;
-let file=formatArguments('file')||null;
+const c_arguments=process.argv.splice(2)
+let templete=formatArguments('t',c_arguments)||null;
+let file=formatArguments('file',c_arguments)||null;
 
 //如果初始化命令，就在当前目录生成
-async function initRun(){
-        let outfile=formatArguments('outfile')||null;
-        if (!outfile){
-            return console.log('需要指定参数:--outfile')
+async function templeteRun(){
+        let out=formatArguments('out')||null;
+        console.log('out:',out)
+        if (!out){
+            return console.log('需要指定参数:--out')
         }
+        console.log('templeteRun..',templete,outfile)
         //未实现
         /*let initConfig='';
         if (!file){
@@ -63,8 +66,8 @@ async function initRun(){
             let {initType,templet,describe}=script[i];
         }*/
 }
-if (!init) {
-    initRun();
+if (templete) {
+   return templeteRun();
 }
 
 
@@ -90,10 +93,30 @@ async function run(){
     `)
     console.log('script:',script)
     for (let i=0;i<script.length;i++){
-        let temFrom=Path.resolve(currentPath,script[i].from)
+        let temFrom
+        if (typeof script[i].fromResolve=='undefined'){
+            temFrom=Path.resolve(currentPath,script[i].from)
+        }else{
+            if (script[i].fromResolve){
+                temFrom=Path.resolve(currentPath,script[i].from)
+            }else{
+                temFrom=script[i].from
+            }
+        }
         //检查temFrom是否存在
         let isExists=await exists(temFrom)
-        let temTo=Path.resolve(currentPath,script[i].to)
+        let temTo;
+        if (typeof script[i].toResolve=='undefined'){
+            temTo=Path.resolve(currentPath,script[i].to)
+        }else{
+            if (script[i].toResolve){
+                temTo=Path.resolve(currentPath,script[i].to)
+            }else{
+                temTo=script[i].to
+            }
+        }
+
+
         let msg='copy:'+temFrom+'=>'+temTo;
         if (isExists){
             try{
