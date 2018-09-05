@@ -35,6 +35,7 @@ let helpMsg=`
    bangbang --t 文件夹模板 --out 输出的文件名
 `;
 const currentPath=process.cwd();
+console.log('bangbang v0.0.2')
 console.log('当前运行目录：'+currentPath)
 //console.log(c_arguments)
 const c_arguments=process.argv.splice(2)
@@ -79,57 +80,110 @@ if (!file){
 
 
 async function run(){
-
     let configFile=Path.resolve(currentPath,file)
     let isExists=await exists(configFile)
     console.log('加载配置文件:'+configFile)
     if (!isExists){
         console.log('没有找到配置文件：'+configFile)
     }
-    let {describe,script}=require(configFile)
+    let copyConfig=require(configFile)
+    let describe=copyConfig.describe;
     console.log(`
        开始运行..
        “${describe}”
     `)
-    console.log('script:',script)
-    for (let i=0;i<script.length;i++){
-        let temFrom
-        if (typeof script[i].fromResolve=='undefined'){
-            temFrom=Path.resolve(currentPath,script[i].from)
-        }else{
-            if (script[i].fromResolve){
-                temFrom=Path.resolve(currentPath,script[i].from)
+    if (typeof copyConfig.script!='undefined') {
+        console.log('\n准备批量拷贝\n');
+        let script=copyConfig.script;
+        console.log('配置:', script,'\n')
+        for (let i = 0; i < script.length; i++) {
+            let temFrom
+            if (typeof script[i].fromResolve == 'undefined') {
+                temFrom = Path.resolve(currentPath, script[i].from)
+            } else {
+                if (script[i].fromResolve) {
+                    temFrom = Path.resolve(currentPath, script[i].from)
+                } else {
+                    temFrom = script[i].from
+                }
+            }
+            //检查temFrom是否存在
+            let isExists = await exists(temFrom)
+            let temTo;
+            if (typeof script[i].toResolve == 'undefined') {
+                temTo = script[i].to
+            } else {
+                if (script[i].toResolve) {
+                    temTo = Path.resolve(currentPath, script[i].to)
+                } else {
+                    temTo = script[i].to
+                }
+            }
+
+
+            let msg = 'copy:' + temFrom + '=>' + temTo;
+            if (isExists) {
+                try {
+                    await fse.copy(temFrom, temTo)
+                    msg += ' [ok]'
+                } catch (e) {
+                    msg += ' [no ]' + e.message
+                }
+                console.log(msg)
+            } else {
+                console.log('[no]没有找到文件：' + temFrom)
+            }
+
+        }
+    }
+    //合并
+    if (typeof copyConfig.merge!='undefined'){
+        console.log('\n准备批量合并\n');
+        let merge=copyConfig.merge;
+        console.log('配置:', merge,'\n')
+        let mergeTip='';
+        for (let i=0;i<merge.length;i++){
+            mergeTip+='\n合并:'
+            let item=merge[i]
+            let files=item.files;
+            let mcontent='';
+            for (let j=0;j<files.length;j++){
+                let itemJ=files[j];
+                let mfile=itemJ.from;
+                let temTo;
+                if (typeof itemJ.fromResolve=='undefined'){
+                    temTo=mfile
+                }else{
+                    if (itemJ.fromResolve){
+                        temTo=Path.resolve(currentPath,mfile)
+                    }else{
+                        temTo=mfile
+                    }
+                }
+                let isExists=await exists(temTo)
+                if (isExists){
+                    mergeTip+='[ok]'+temTo;
+                    if (mcontent!='') mcontent+='\n'
+                    mcontent+=await readEjsFile(temTo);
+                }else{
+                    mergeTip+='[no]'+temTo;
+                }
+            }
+            let mName=item.name;
+            let mTo='';
+            if (typeof mName.toResolve=='undefined'){
+                mTo=mName.file
             }else{
-                temFrom=script[i].from
+                if (mName.toResolve){
+                    mTo=Path.resolve(currentPath,mName.file)
+                }else{
+                    mTo=mName.file
+                }
             }
+            mergeTip+='=>'+mTo;
+            await writeFile(mTo,mcontent)
         }
-        //检查temFrom是否存在
-        let isExists=await exists(temFrom)
-        let temTo;
-        if (typeof script[i].toResolve=='undefined'){
-            temTo=Path.resolve(currentPath,script[i].to)
-        }else{
-            if (script[i].toResolve){
-                temTo=Path.resolve(currentPath,script[i].to)
-            }else{
-                temTo=script[i].to
-            }
-        }
-
-
-        let msg='copy:'+temFrom+'=>'+temTo;
-        if (isExists){
-            try{
-                await fse.copy(temFrom,temTo)
-                msg+=' [ok]'
-            }catch(e){
-                msg+=' [no ]'+e.message
-            }
-            console.log(msg)
-        }else{
-            console.log('[no]没有找到文件：'+temFrom)
-        }
-
+        console.log(mergeTip);
     }
 
 }

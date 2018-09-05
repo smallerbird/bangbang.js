@@ -1,6 +1,18 @@
 module.exports={
-    describe:"测试从from文件夹里，移动一些文件到to文件夹里",
+    describe:"测试从from文件夹里，移动一些文件到to文件夹里,同时合并一个文件",
     script:[
-        {from:'./from/ac/',to:'./to/a'},
+        {from:'./from/ac/',to:'./to/ac'},
+        {from:'./from/a/',to:'./to/a'},
+        {from:'./from/js.js',to:'./to/js.js'},
+    ],
+    merge:[
+        {
+            files:[
+                {from:'./from/m1.js',toResolve:true},
+                {from:'./from/m2.js',toResolve:true},
+                {from:'./from/m3.js',toResolve:true},
+             ],
+            name:{file:'./to/m.js',toResolve:true}
+        },
     ]
 }
