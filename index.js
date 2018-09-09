@@ -27,7 +27,7 @@ let helpMsg=`
     module.exports={
         describe:"该脚本的说明", 
         script:[
-            {from:'从这里',to:'拷贝到这里'},
+            {from:'从这里',to:'拷贝到这里',toResolve:true/false是否是相对目录,fromResolve:true/false是否是相对目录},
             ....
         ]
     }
