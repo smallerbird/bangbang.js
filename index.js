@@ -1,11 +1,10 @@
 #!/usr/bin/env node
-
-
 const fse = require('fs-extra')
 const Path=require('path')
 const process=require('process')
 let {exists,writeFile}=require('./lib/FSTools')
 let {formatArguments}=require('./lib/CommandLine.js')
+const ScanDir=require('./lib/ScanDir.js')
 
 const ejs=require('ejs');
 const readEjsFile = function (file,data={}){
@@ -94,97 +93,131 @@ async function run(){
     `)
     if (typeof copyConfig.script!='undefined') {
         console.log('\n准备批量拷贝\n');
-        let script=copyConfig.script;
-        console.log('配置:', script,'\n')
-        for (let i = 0; i < script.length; i++) {
-            let temFrom
-            if (typeof script[i].fromResolve == 'undefined') {
-                temFrom = Path.resolve(currentPath, script[i].from)
-            } else {
-                if (script[i].fromResolve) {
+        try{
+            let script=copyConfig.script;
+            console.log('配置:', JSON.stringify(script),'\n')
+            for (let i = 0; i < script.length; i++) {
+                let temFrom
+                if (typeof script[i].fromResolve == 'undefined') {
                     temFrom = Path.resolve(currentPath, script[i].from)
                 } else {
-                    temFrom = script[i].from
+                    if (script[i].fromResolve) {
+                        temFrom = Path.resolve(currentPath, script[i].from)
+                    } else {
+                        temFrom = script[i].from
+                    }
                 }
-            }
-            //检查temFrom是否存在
-            let isExists = await exists(temFrom)
-            let temTo;
-            if (typeof script[i].toResolve == 'undefined') {
-                temTo = script[i].to
-            } else {
-                if (script[i].toResolve) {
-                    temTo = Path.resolve(currentPath, script[i].to)
-                } else {
+                //检查temFrom是否存在
+                let isExists = await exists(temFrom)
+                let temTo;
+                if (typeof script[i].toResolve == 'undefined') {
                     temTo = script[i].to
+                } else {
+                    if (script[i].toResolve) {
+                        temTo = Path.resolve(currentPath, script[i].to)
+                    } else {
+                        temTo = script[i].to
+                    }
                 }
-            }
 
 
-            let msg = 'copy:' + temFrom + '=>' + temTo;
-            if (isExists) {
-                try {
-                    await fse.copy(temFrom, temTo)
-                    msg += ' [ok]'
-                } catch (e) {
-                    msg += ' [no ]' + e.message
+                let msg = 'copy:' + temFrom + '=>' + temTo;
+                if (isExists) {
+                    try {
+                        await fse.copy(temFrom, temTo)
+                        msg += ' [ok]'
+                    } catch (e) {
+                        msg += ' [no ]' + e.message
+                    }
+                    console.log(msg)
+                } else {
+                    console.log('[no]没有找到文件：' + temFrom)
                 }
-                console.log(msg)
-            } else {
-                console.log('[no]没有找到文件：' + temFrom)
-            }
 
+            }
+        }catch(e){
+            console.log('批量拷贝发生错误：',e)
         }
     }
     //合并
     if (typeof copyConfig.merge!='undefined'){
         console.log('\n准备批量合并\n');
-        let merge=copyConfig.merge;
-        console.log('配置:', merge,'\n')
-        let mergeTip='';
-        for (let i=0;i<merge.length;i++){
-            mergeTip+='\n合并:'
-            let item=merge[i]
-            let files=item.files;
-            let mcontent='';
-            for (let j=0;j<files.length;j++){
-                let itemJ=files[j];
-                let mfile=itemJ.from;
-                let temTo;
-                if (typeof itemJ.fromResolve=='undefined'){
-                    temTo=mfile
-                }else{
-                    if (itemJ.fromResolve){
-                        temTo=Path.resolve(currentPath,mfile)
-                    }else{
+        try{
+            let merge=copyConfig.merge;
+            console.log('配置:', JSON.stringify(merge),'\n')
+            let mergeTip='';
+            for (let i=0;i<merge.length;i++){
+                mergeTip+='\n合并:'
+                let item=merge[i]
+                let files=item.files;
+                let mcontent='';
+                for (let j=0;j<files.length;j++){
+                    let itemJ=files[j];
+                    let mfile=itemJ.from;
+                    let temTo;
+                    if (typeof itemJ.fromResolve=='undefined'){
                         temTo=mfile
+                    }else{
+                        if (itemJ.fromResolve){
+                            temTo=Path.resolve(currentPath,mfile)
+                        }else{
+                            temTo=mfile
+                        }
+                    }
+                    let isExists=await exists(temTo)
+                    if (isExists){
+                        mergeTip+='[ok]'+temTo;
+                        if (mcontent!='') mcontent+='\n'
+                        mcontent+=await readEjsFile(temTo);
+                    }else{
+                        mergeTip+='[no]'+temTo;
+                    }
+                    mergeTip+='\n'
+
+                }
+                let mName=item.name;
+                let mTo='';
+                if (typeof mName.toResolve=='undefined'){
+                    mTo=mName.file
+                }else{
+                    if (mName.toResolve){
+                        mTo=Path.resolve(currentPath,mName.file)
+                    }else{
+                        mTo=mName.file
                     }
                 }
-                let isExists=await exists(temTo)
-                if (isExists){
-                    mergeTip+='[ok]'+temTo;
-                    if (mcontent!='') mcontent+='\n'
-                    mcontent+=await readEjsFile(temTo);
-                }else{
-                    mergeTip+='[no]'+temTo;
-                }
+                mergeTip+='=>'+mTo;
+                await writeFile(mTo,mcontent)
             }
-            let mName=item.name;
-            let mTo='';
-            if (typeof mName.toResolve=='undefined'){
-                mTo=mName.file
-            }else{
-                if (mName.toResolve){
-                    mTo=Path.resolve(currentPath,mName.file)
-                }else{
-                    mTo=mName.file
-                }
-            }
-            mergeTip+='=>'+mTo;
-            await writeFile(mTo,mcontent)
+            console.log(mergeTip);
+        }catch(e){
+            console.log('批量合并错误：',e)
         }
-        console.log(mergeTip);
+
     }
+    //遍历目录
+    if (typeof copyConfig.scan!='undefined'){
+        console.log('开始遍历目录..')
+        let scan=copyConfig.scan.dir;
+        let ignoreScan=copyConfig.scan.ignoreScan;
+        let scanDir=new ScanDir(ignoreScan);
+        for (let i=0;i<scan.length;i++){
+            let item=scan[i]
+            let {from,toResolve,callback}=item;
+            if (!callback){
+                callback=function (file) {
+
+                }
+            }
+            let scanfile=from;
+            if (toResolve){
+                scanfile=Path.resolve(currentPath,scanfile)
+            }
+            console.log('遍历目录:'+scanfile)
+            scanDir.recursiveReadFile(scanfile,callback);
+        }
+    }
+
 
 }
 run();

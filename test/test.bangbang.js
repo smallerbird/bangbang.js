@@ -1,3 +1,7 @@
+function scanCallbak(file) {
+    console.log('scanCallbak:'+file)
+}
+
 module.exports={
     describe:"测试从from文件夹里，移动一些文件到to文件夹里,同时合并一个文件",
     script:[
@@ -14,5 +18,12 @@ module.exports={
              ],
             name:{file:'./to/m.js',toResolve:true}
         },
-    ]
+    ],
+    scan:{
+        dir:[
+            {from:'./test',toResolve:true,callback:scanCallbak},
+            {from:'D:\\fei\\myproject\\bangbang.js\\lib',toResolve:false,callback:scanCallbak},
+        ],
+        ignoreScan:[/node_modules/,/\.git/,/\.idea/]
+    }
 }
