@@ -15,6 +15,8 @@ bangbang.js
 3. 维护代码库.例如我们写了一个代码库如:modulesA,我们把它放在d:/myproject/modulesA这个目录下，同时做为git目录进行维护。
 然后我们要需要针对这个库写一些测试demo 于是在：d:/myproject/modulesA_demo  然后这里会引用node_modules/modulesA,我们在写demo测试这个代码库里，可以直接在node_modules/modulesA修改，然后利用bangbang进行拷贝到d:/myproject/modulesA 来方便更新。
 
+
+
 如何使用
 -----
 1. 安装
@@ -29,11 +31,13 @@ bangbang --file 配置文件
 ```
 详细配置说明和demo
 -----
-> 请参考test/test.bangbang.js
+1. 完整的deom页面及运行方法
 ```sh
+#test/test.bangbang.js
 cd test
 bangbang --file test.bangbang.js
 ```
+2. 关于deom配置详细说明。
 ```js
 //扫描的回调方法
 function scanCallbak(file) {
@@ -76,4 +80,9 @@ module.exports={
     }
 }
 ```
+
+更新日志
+-----
+
+
 
